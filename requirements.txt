@@ -10,5 +10,9 @@ modelscope
 munch==4.0.0
 loguru
 
+# should manually install openfst-1.8.3 (for pynini-2.1.6) before installing pynini
+
 WeTextProcessing; platform_machine != "Darwin"
 wetext; platform_system == "Darwin"
+
+"numpy<2"

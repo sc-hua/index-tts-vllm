@@ -439,7 +439,9 @@ class IndexTTS2:
                     s2mel_time += time.perf_counter() - m_start_time
 
                     m_start_time = time.perf_counter()
-                    wav = self.bigvgan(vc_target.float()).squeeze().unsqueeze(0)
+                    # 确保张量不在 inference_mode 中,需要 clone 或 detach
+                    vc_target_safe = vc_target.float().clone()
+                    wav = self.bigvgan(vc_target_safe).squeeze().unsqueeze(0)
                     bigvgan_time += time.perf_counter() - m_start_time
                     wav = wav.squeeze(1)
 
