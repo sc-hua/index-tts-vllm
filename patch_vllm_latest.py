@@ -58,22 +58,6 @@ def _prepare_inputs(
         out=positions_np,
     )
 
-    # GPT2TTSModel position ids support. Offset the decode positions to ignore
-    # the prompt tokens so that each decode step uses the correct embedding.
-    model = self.get_model()
-    if isinstance(model, GPT2TTSModel):
-        prompt_tokens_offset = []
-        for req_id in self.input_batch.req_ids:
-            prompt_tokens_offset.append(
-                -(len(self.requests[req_id].prompt_token_ids) - 1)
-            )
-        prompt_tokens_offset = np.asarray(prompt_tokens_offset, dtype=np.int32)
-        np.add(
-            prompt_tokens_offset[req_indices],
-            positions_np,
-            out=positions_np,
-        )
-
     # Calculate M-RoPE positions.
     # Only relevant for models using M-RoPE (e.g, Qwen2-VL)
     if self.uses_mrope:
@@ -204,6 +188,19 @@ def _prepare_inputs(
 
     # Copy the tensors to the GPU.
     self._prepare_input_ids(total_num_scheduled_tokens, cu_num_tokens)
+
+    # GPT2TTSModel position IDs support. Offset the decode positions to ignore
+    # prompt tokens so each decode step uses the correct embedding.
+    model = self.get_model()
+    if isinstance(model, GPT2TTSModel):
+        prompt_offsets = np.empty(num_reqs, dtype=np.int32)
+        for idx, req_id in enumerate(self.input_batch.req_ids[:num_reqs]):
+            prompt_offsets[idx] = -(len(self.requests[req_id].prompt_token_ids) - 1)
+        np.add(
+            prompt_offsets[req_indices],
+            self.positions.np[:total_num_scheduled_tokens],
+            out=self.positions.np[:total_num_scheduled_tokens],
+        )
 
     if self.uses_mrope:
         # Only relevant for models using M-RoPE (e.g, Qwen2-VL)

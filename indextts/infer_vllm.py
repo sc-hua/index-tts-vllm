@@ -20,6 +20,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 from indextts.BigVGAN.models import BigVGAN as Generator
 from indextts.gpt.model_vllm import UnifiedVoice
+from indextts.utils.audio_io import safe_torchaudio_load
 from indextts.utils.checkpoint import load_checkpoint
 from indextts.utils.feature_extractors import MelSpectrogramFeatures
 
@@ -108,6 +109,7 @@ class IndexTTS:
             tensor_parallel_size=1,
             dtype="auto",
             gpu_memory_utilization=gpu_memory_utilization,
+            enable_mm_embeds=True,
             # enforce_eager=True,
         )
         indextts_vllm = AsyncLLM.from_engine_args(engine_args)
@@ -191,7 +193,7 @@ class IndexTTS:
 
         auto_conditioning = []
         for ap_ in audio_prompt:
-            audio, sr = torchaudio.load(ap_)
+            audio, sr = safe_torchaudio_load(ap_)
             audio = torch.mean(audio, dim=0, keepdim=True)
             if audio.shape[0] > 1:
                 audio = audio[0].unsqueeze(0)
@@ -362,7 +364,7 @@ class IndexTTS:
     def registry_speaker(self, speaker: str, audio_paths: List[str]):
         auto_conditioning = []
         for ap_ in audio_paths:
-            audio, sr = torchaudio.load(ap_)
+            audio, sr = safe_torchaudio_load(ap_)
             audio = torch.mean(audio, dim=0, keepdim=True)
             if audio.shape[0] > 1:
                 audio = audio[0].unsqueeze(0)

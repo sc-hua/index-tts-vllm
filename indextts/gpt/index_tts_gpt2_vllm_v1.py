@@ -1,3 +1,4 @@
+import inspect
 from typing import (Any, Dict, Final, Iterable, List, Literal, Mapping, Optional,
                     Protocol, Set, Tuple, TypedDict, TypeVar, Union, Sequence)
 
@@ -8,14 +9,24 @@ from transformers import BatchFeature
 
 from vllm.compilation.decorators import support_torch_compile
 from vllm.config import CacheConfig, VllmConfig
+from vllm.config.multimodal import BaseDummyOptions
 from vllm.distributed.parallel_state import (
     get_pp_group, get_tensor_model_parallel_world_size)
 from vllm.model_executor.layers.logits_processor import LogitsProcessor
-from vllm.model_executor.layers.sampler import SamplerOutput, get_sampler
 from vllm.model_executor.layers.vocab_parallel_embedding import (
     ParallelLMHead, VocabParallelEmbedding)
 from vllm.model_executor.model_loader.weight_utils import default_weight_loader
-from vllm.model_executor.sampling_metadata import SamplingMetadata
+
+try:
+    from vllm.model_executor.layers.sampler import SamplerOutput, get_sampler
+    from vllm.model_executor.sampling_metadata import SamplingMetadata
+except ImportError:
+    from vllm.v1.outputs import SamplerOutput  # type: ignore
+    from vllm.v1.sample.metadata import SamplingMetadata  # type: ignore
+    from vllm.v1.sample.sampler import Sampler as _LatestSampler  # type: ignore
+
+    def get_sampler():
+        return _LatestSampler()
 from vllm.sequence import IntermediateTensors
 from vllm.model_executor.models.interfaces import SupportsPP
 
@@ -53,7 +64,12 @@ class GPT2TTSDummyInputsBuilder(BaseDummyInputsBuilder[GPT2TTSProcessingInfo]):
         num_audios = mm_counts.get("audio", 0)
         return PLACEHOLDER_TOKEN * num_audios
 
-    def get_dummy_mm_data(self, seq_len: int, mm_counts: Mapping[str, int]) -> Dict[str, Any]:
+    def get_dummy_mm_data(
+        self,
+        seq_len: int,
+        mm_counts: Mapping[str, int],
+        mm_options: Mapping[str, BaseDummyOptions] | None = None,
+    ) -> Dict[str, Any]:
         num_items = mm_counts.get("audio", 0)
         if num_items == 0:
             return {}
@@ -264,6 +280,9 @@ class GPT2TTSModel(nn.Module, SupportsPP, SupportsMultiModal):
                                       bias=True)
 
         self.logits_processor = LogitsProcessor(config.vocab_size)
+        self._logits_processor_supports_sampling_metadata = (
+            "sampling_metadata" in inspect.signature(
+                self.logits_processor.forward).parameters)
         self.sampler = get_sampler()
         self.make_empty_intermediate_tensors = (
             self.transformer.make_empty_intermediate_tensors)
@@ -320,6 +339,19 @@ class GPT2TTSModel(nn.Module, SupportsPP, SupportsMultiModal):
                 PLACEHOLDER_TOKEN_ID)
         return inputs_embeds
 
+    def embed_input_ids(
+        self,
+        input_ids: torch.Tensor,
+        *,
+        multimodal_embeddings: Optional[MultiModalEmbeddings] = None,
+        **kwargs: object,
+    ) -> torch.Tensor:
+        """Adapter for vLLM's embed_input_ids interface."""
+        return self.get_input_embeddings(
+            input_ids,
+            multimodal_embeddings=multimodal_embeddings,
+        )
+
     def forward(
         self,
         input_ids: torch.Tensor,
@@ -351,10 +383,17 @@ class GPT2TTSModel(nn.Module, SupportsPP, SupportsMultiModal):
     def compute_logits(
         self,
         hidden_states: torch.Tensor,
-        sampling_metadata: SamplingMetadata,
+        sampling_metadata: Optional[SamplingMetadata] = None,
     ) -> Optional[torch.Tensor]:
-        logits = self.logits_processor(self.lm_head, hidden_states,
-                                       sampling_metadata)
+        if sampling_metadata is not None and \
+                self._logits_processor_supports_sampling_metadata:
+            logits = self.logits_processor(
+                self.lm_head,
+                hidden_states,
+                sampling_metadata=sampling_metadata,
+            )
+        else:
+            logits = self.logits_processor(self.lm_head, hidden_states)
         return logits
 
     def sample(

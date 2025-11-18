@@ -4,11 +4,13 @@ import random
 import torch
 import torchaudio
 
+from .audio_io import safe_torchaudio_load
+
 MATPLOTLIB_FLAG = False
 
 
 def load_audio(audiopath, sampling_rate):
-    audio, sr = torchaudio.load(audiopath)
+    audio, sr = safe_torchaudio_load(audiopath)
     #print(f"wave shape: {audio.shape}, sample_rate: {sr}")
 
     if audio.size(0) > 1:  # mix to mono

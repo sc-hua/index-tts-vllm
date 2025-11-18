@@ -20,6 +20,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 from indextts.BigVGAN.models import BigVGAN as Generator
 from indextts.gpt.model import UnifiedVoice
+from indextts.utils.audio_io import safe_torchaudio_load
 from indextts.utils.checkpoint import load_checkpoint
 from indextts.utils.feature_extractors import MelSpectrogramFeatures
 
@@ -161,7 +162,7 @@ class IndexTTS:
 
         # 如果参考音频改变了，才需要重新生成 cond_mel, 提升速度
         if self.cache_cond_mel is None or self.cache_audio_prompt != audio_prompt:
-            audio, sr = torchaudio.load(audio_prompt)
+            audio, sr = safe_torchaudio_load(audio_prompt)
             audio = torch.mean(audio, dim=0, keepdim=True)
             if audio.shape[0] > 1:
                 audio = audio[0].unsqueeze(0)
