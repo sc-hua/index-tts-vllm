@@ -4,7 +4,9 @@ import os
 import functools
 
 from loguru import logger
-import patch_vllm  # ⚠️ Monkey Patch, do not delete this line
+
+# ⚠️ Monkey Patch, do not delete this line
+import patch_vllm_auto as patch_vllm  # noqa: F401
 
 import torch
 import torch.nn as nn

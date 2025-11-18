@@ -21,6 +21,8 @@ RUN pip install --no-cache-dir --break-system-packages -r requirements.txt
 COPY indextts /app/indextts
 COPY tools /app/tools
 COPY patch_vllm.py /app/patch_vllm.py
+COPY patch_vllm_latest.py /app/patch_vllm_latest.py
+COPY patch_vllm_auto.py /app/patch_vllm_auto.py
 COPY api_server.py /app/api_server.py
 COPY convert_hf_format.py /app/convert_hf_format.py
 COPY convert_hf_format.sh /app/convert_hf_format.sh

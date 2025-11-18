@@ -23,7 +23,8 @@ import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir)
 
-import patch_vllm  # ⚠️ Monkey Patch, do not delete this line
+# ⚠️ Monkey Patch, do not delete this line
+import patch_vllm_auto as patch_vllm  # noqa: F401
 
 from indextts.gpt.index_tts_gpt2_vllm_v1 import PLACEHOLDER_TOKEN, PLACEHOLDER_TOKEN_ID
 
