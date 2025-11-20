@@ -162,6 +162,12 @@ class IndexTTS:
                 llm.shutdown()
         except Exception as ex:
             print(">> Failed to shutdown vLLM engine:", ex)
+        # Make sure any torch distributed process group is closed to silence NCCL warnings.
+        try:
+            if torch.distributed.is_initialized():
+                torch.distributed.destroy_process_group()
+        except Exception as ex:
+            print(">> Failed to destroy process group:", ex)
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
     

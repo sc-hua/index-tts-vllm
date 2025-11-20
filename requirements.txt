@@ -1,4 +1,4 @@
-# vllm==0.10.2  ## install manually from local source
+# vllm==0.10.2  ## install manually from local source (v0.11.1)
 descript-audiotools==0.7.2
 matplotlib==3.8.2
 omegaconf

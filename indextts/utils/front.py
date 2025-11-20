@@ -85,6 +85,38 @@ class TextNormalizer:
         has_pinyin = bool(re.search(TextNormalizer.PINYIN_TONE_PATTERN, s, re.IGNORECASE))
         return has_pinyin
 
+
+    def _load_tn_normalizers(self):
+        # make cache dir for tn normalizers
+        cache_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tagger_cache")
+        if not os.path.exists(cache_dir):
+            os.makedirs(cache_dir)
+            with open(os.path.join(cache_dir, ".gitignore"), "w") as f:
+                f.write("*\n")
+                
+        from tn.chinese.normalizer import Normalizer as NormalizerZh
+        from tn.english.normalizer import Normalizer as NormalizerEn
+        zh = NormalizerZh(
+            cache_dir=cache_dir, remove_interjections=False, remove_erhua=False, overwrite_cache=False
+        )
+        en = NormalizerEn(overwrite_cache=False)
+        return zh, en
+
+    def _load_wetext_normalizers(self):
+        from wetext import Normalizer
+        zh = Normalizer(remove_erhua=False, lang="zh", operator="tn")
+        en = Normalizer(lang="en", operator="tn")
+        return zh, en
+
+    def _load_simple_normalizers(self):
+        class _SimpleNormalizer:
+            def __init__(self, lang: str):
+                self.lang = lang
+
+            def normalize(self, text: str) -> str:
+                return text
+        return _SimpleNormalizer("zh"), _SimpleNormalizer("en")
+        
     def load(self):
         # print(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
         # sys.path.append(model_dir)
@@ -92,39 +124,20 @@ class TextNormalizer:
         if self.zh_normalizer is not None and self.en_normalizer is not None:
             return
         if platform.system() == "Darwin" or platform.system() == "Windows":
-            from wetext import Normalizer
-
-            self.zh_normalizer = Normalizer(remove_erhua=False, lang="zh", operator="tn")
-            self.en_normalizer = Normalizer(lang="en", operator="tn")
+            self.zh_normalizer, self.en_normalizer = self._load_wetext_normalizers()
         else:
             try:
-                from tn.chinese.normalizer import Normalizer as NormalizerZh
-                from tn.english.normalizer import Normalizer as NormalizerEn
-                # use new cache dir for build tagger rules with disable remove_interjections and remove_erhua
-                cache_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tagger_cache")
-                if not os.path.exists(cache_dir):
-                    os.makedirs(cache_dir)
-                    with open(os.path.join(cache_dir, ".gitignore"), "w") as f:
-                        f.write("*\n")
-                self.zh_normalizer = NormalizerZh(
-                    cache_dir=cache_dir, remove_interjections=False, remove_erhua=False, overwrite_cache=False
-                )
-                self.en_normalizer = NormalizerEn(overwrite_cache=False)
+                self.zh_normalizer, self.en_normalizer = self._load_tn_normalizers()
             except Exception as exc:
-                warnings.warn(
-                    f"Failed to load tn normalizers ({exc}), falling back to simple text normalization.",
-                    RuntimeWarning,
-                )
-
-                class _SimpleNormalizer:
-                    def __init__(self, lang: str):
-                        self.lang = lang
-
-                    def normalize(self, text: str) -> str:
-                        return text
-
-                self.zh_normalizer = _SimpleNormalizer("zh")
-                self.en_normalizer = _SimpleNormalizer("en")
+                try:
+                    warnings.warn(f"tn normalizers failed ({exc}); trying wetext instead.", RuntimeWarning)
+                    self.zh_normalizer, self.en_normalizer = self._load_wetext_normalizers()
+                except Exception as exc_wetext:
+                    warnings.warn(
+                        f"Failed to load tn normalizers ({exc}); wetext failed too ({exc_wetext}), "
+                        "falling back to simple text normalization.", RuntimeWarning
+                    )
+                    self.zh_normalizer, self.en_normalizer = self._load_simple_normalizers()
 
     def normalize(self, text: str) -> str:
         if not self.zh_normalizer or not self.en_normalizer:
