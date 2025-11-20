@@ -5,6 +5,13 @@
 # IndexTTS-vLLM
 </div>
 
+## Recent Updates
+- **[Fix]** Fixed vLLM version compatibility issues, now supporting the latest version.
+- **[Fix]** Optimized `WeTextProcessing` (tn) loading logic and added fault tolerance.
+- **[Feat]** Added `safe_torchaudio_load` to replace `torchaudio.load`, improving audio loading stability.
+- **[Feat]** Supported BigVGAN compilation on CUDA sm_110 architecture.
+- **[Feat]** Optimized resource cleanup (NCCL/vLLM) and model shutdown logic.
+
 ## Introduction
 This project re-implements the GPT model's inference from [index-tts](https://github.com/index-tts/index-tts) using the vllm library, accelerating the inference process of index-tts.
 

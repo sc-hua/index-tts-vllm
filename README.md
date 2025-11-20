@@ -5,6 +5,14 @@
 # IndexTTS-vLLM
 </div>
 
+## 修改内容
+- **[Fix]** 修复了 vLLM 版本兼容性问题，支持最新版本 (v0.11.1)。
+- **[Fix]** 优化了 `WeTextProcessing` (tn) 的加载逻辑，增加了容错处理。
+- **[Feat]** 新增 `safe_torchaudio_load` 替代 `torchaudio.load`，提高音频加载稳定性。
+- **[Feat]** 支持 BigVGAN 在 CUDA sm_110 架构上的编译。
+- **[Feat]** 优化了资源清理（NCCL/vLLM）和模型关闭逻辑。
+
+
 ## 项目简介
 该项目在 [index-tts](https://github.com/index-tts/index-tts) 的基础上使用 vllm 库重新实现了 gpt 模型的推理，加速了 index-tts 的推理过程。
 
