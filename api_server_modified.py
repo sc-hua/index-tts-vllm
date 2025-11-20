@@ -58,8 +58,10 @@ async def lifespan(app: FastAPI):
                 audio_paths_.append(os.path.join(cur_dir, audio_path))
             tts.registry_speaker(speaker, audio_paths_)
     yield
-    # Clean up the ML models and release the resources
-    # ml_models.clear()
+    # Clean up resources to avoid NCCL/vLLM warnings on shutdown
+    if tts is not None:
+        tts.shutdown()
+        tts = None
 
 app = FastAPI(lifespan=lifespan)
 

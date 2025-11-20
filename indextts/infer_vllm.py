@@ -153,6 +153,17 @@ class IndexTTS:
         print(">> bpe model loaded from:", self.bpe_path)
 
         self.speaker_dict = {}
+
+    def shutdown(self):
+        """Release vLLM engine and GPU memory early to avoid exit-time warnings."""
+        try:
+            llm = getattr(self.gpt, "llm", None)
+            if llm is not None:
+                llm.shutdown()
+        except Exception as ex:
+            print(">> Failed to shutdown vLLM engine:", ex)
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
     
     def remove_long_silence(self, codes: list, latent: torch.Tensor, max_consecutive=15, silent_token=52):
         assert latent.dim() == 3 and latent.size(0) == 1, "Latent should be (1, seq_len, dim)"
