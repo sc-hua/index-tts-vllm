@@ -1,20 +1,31 @@
-# vllm==0.10.2  ## manually install vllm from local code source
+# vllm==0.10.2  ## install manually from local source
 descript-audiotools==0.7.2
 matplotlib==3.8.2
 omegaconf
 sentencepiece
 librosa
-soundfile
 gradio
 ninja
 modelscope
 munch==4.0.0
 loguru
 
-# should manually install openfst-1.8.3 (for pynini-2.1.6) before installing pynini
-
+# WeTextProcessing requires pynini and openfst.
+# install openfst-1.8.3 manually first (required by pynini-2.1.6)
+# `tn` is the actual package folder for `WeTextProcessing`
+# so: `pip install WeTextProcessing` -> `import tn`
 WeTextProcessing; platform_machine != "Darwin"
 wetext; platform_system == "Darwin"
 
-numpy<2     ## add for compatibility with other packages
-torchcodec  ## add for error "ModuleNotFoundError: No module named 'torchcodec'"
+# if WeTextProcessing/tn fails, just use wetext instead.
+## e.g. error like:
+## Failed to load tn normalizers (/home/tangyan/miniconda3/envs/vllm-index/bin/../lib/libstdc++.so.6: version `GLIBCXX_3.4.32' not found 
+## (required by /usr/local/lib/libfstmpdtscript.so.26))
+# simply run `pip install wetext`
+# but you'll need to update the load logic in indextts/utils/front.py (load function).
+
+# torchcodec might fail during torchaudio.load()
+# use soundfile as a fallback in indextts/utils/audio_io.py
+soundfile
+
+numpy<2     ## for compatibility with other packages

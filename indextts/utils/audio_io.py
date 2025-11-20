@@ -13,14 +13,10 @@ def safe_torchaudio_load(
     """Load audio with torchaudio, falling back when torchcodec is missing."""
     try:
         return torchaudio.load(path, *args, **kwargs)
-    except ImportError as exc:
-        warnings.warn(
-            f"TorchCodec backend is unavailable ({exc}); falling back to "
-            "soundfile-based loader.",
-            RuntimeWarning,
-        )
+    except Exception:
+        warnings.warn(">> TorchCodec backend is unavailable; falling back to soundfile-based loader.")
+        
         import soundfile as sf
-
         audio_np, sr = sf.read(path, always_2d=True, dtype="float32")
         audio = torch.from_numpy(audio_np.T)
         return audio, sr
