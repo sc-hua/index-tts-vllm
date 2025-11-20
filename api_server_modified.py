@@ -22,8 +22,10 @@ from indextts.infer_vllm import IndexTTS
 
 tts = None
 
-TEMP_AUDIO_DIR = Path("temp_audio")
+TEMP_AUDIO_DIR = Path("temp_prompt_audio")
 TEMP_AUDIO_DIR.mkdir(exist_ok=True)
+with open(os.path.join(TEMP_AUDIO_DIR, ".gitignore"), "w") as f:
+    f.write("*\n")
 
 def decode_base64_audio(base64_str: str, prefix: str = "audio") -> str:
     if not isinstance(base64_str, str) or not base64_str.strip():

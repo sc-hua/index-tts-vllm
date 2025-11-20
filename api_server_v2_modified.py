@@ -25,8 +25,10 @@ from indextts.infer_vllm_v2 import IndexTTS2
 tts = None
 
 # 临时文件目录
-TEMP_AUDIO_DIR = Path("temp_audio")
+TEMP_AUDIO_DIR = Path("temp_prompt_audio")
 TEMP_AUDIO_DIR.mkdir(exist_ok=True)
+with open(os.path.join(TEMP_AUDIO_DIR, ".gitignore"), "w") as f:
+    f.write("*\n")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
