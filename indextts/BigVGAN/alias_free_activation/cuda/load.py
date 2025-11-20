@@ -5,6 +5,7 @@ import os
 import pathlib
 import subprocess
 
+import torch
 from torch.utils import cpp_extension
 
 """
@@ -46,12 +47,10 @@ def chinese_path_compile_support(sources, buildpath):
 
 
 def load():
-    # Check if cuda 11 is installed for compute capability 8.0
-    cc_flag = []
-    _, bare_metal_major, _ = _get_cuda_bare_metal_version(cpp_extension.CUDA_HOME)
-    if int(bare_metal_major) >= 11:
-        cc_flag.append("-gencode")
-        cc_flag.append("arch=compute_80,code=sm_80")
+    arches = _resolve_cuda_arch_list()
+    arch_flags = _build_arch_flags(arches)
+    if not arch_flags:
+        arch_flags = _build_arch_flags(["70"])  # safety fallback
 
     # Build path
     srcpath = pathlib.Path(__file__).parent.absolute()
@@ -69,12 +68,10 @@ def load():
             ],
             extra_cuda_cflags=[
                 "-O3",
-                "-gencode",
-                "arch=compute_70,code=sm_70",
                 "--use_fast_math",
             ]
-            + extra_cuda_flags
-            + cc_flag,
+            + arch_flags
+            + extra_cuda_flags,
             verbose=True,
         )
 
@@ -119,3 +116,67 @@ def _create_build_dir(buildpath):
     except OSError:
         if not os.path.isdir(buildpath):
             print(f"Creation of the build directory {buildpath} failed")
+
+
+def _resolve_cuda_arch_list():
+    env_value = os.environ.get("INDEXTTS_CUDA_ARCH_LIST")
+    if env_value:
+        parsed = _parse_arches(env_value)
+        if parsed:
+            return parsed
+
+    # Try to detect from the current device
+    try:
+        if torch.cuda.is_available():
+            major, minor = torch.cuda.get_device_capability()
+            detected = [f"{major}{minor}"]
+            parsed = _parse_arches(detected)
+            if parsed:
+                return parsed
+    except Exception:
+        pass
+
+    # Fall back to legacy defaults (sm70 + optional sm80 if CUDA >= 11)
+    defaults = ["70"]
+    cuda_home = cpp_extension.CUDA_HOME
+    if cuda_home:
+        try:
+            _, bare_metal_major, _ = _get_cuda_bare_metal_version(cuda_home)
+            if int(bare_metal_major) >= 11:
+                defaults.append("80")
+        except Exception:
+            pass
+    return _parse_arches(defaults)
+
+
+def _parse_arches(values):
+    if isinstance(values, str):
+        values = re.split(r"[\s,]+", values)
+    parsed = []
+    for value in values:
+        if value is None:
+            continue
+        cleaned = value.strip().lower()
+        if not cleaned:
+            continue
+        for prefix in ("sm_", "sm", "compute_", "compute"):
+            if cleaned.startswith(prefix):
+                cleaned = cleaned[len(prefix) :]
+        cleaned = cleaned.replace(".", "")
+        if not cleaned.isdigit():
+            continue
+        if cleaned not in parsed:
+            parsed.append(cleaned)
+    return parsed
+
+
+def _build_arch_flags(arches):
+    flags = []
+    if not arches:
+        return flags
+    for arch in arches:
+        flags.extend([
+            "-gencode",
+            f"arch=compute_{arch},code=sm_{arch}",
+        ])
+    return flags
