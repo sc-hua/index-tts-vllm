@@ -236,8 +236,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="0.0.0.0")
     parser.add_argument("--port", type=int, default=7880)
-    parser.add_argument("--model_dir", type=str, default="/home/tangyan/proj/ckpts/indextts-1_5-vllm")
-    parser.add_argument("--gpu_memory_utilization", type=float, default=0.03)
+    parser.add_argument("--model_dir", type=str, default="ckpts/indextts-1_5-vllm")
+    parser.add_argument("--gpu_memory_utilization", type=float, default=0.02)
     args = parser.parse_args()
 
     uvicorn.run(app=app, host=args.host, port=args.port)

@@ -19,7 +19,7 @@ wetext; platform_system == "Darwin"
 
 # if WeTextProcessing/tn fails, just use wetext instead.
 ## e.g. error like:
-## Failed to load tn normalizers (/home/tangyan/miniconda3/envs/vllm-index/bin/../lib/libstdc++.so.6: version `GLIBCXX_3.4.32' not found 
+## Failed to load tn normalizers (/xxx/miniconda3/envs/vllm-index/bin/../lib/libstdc++.so.6: version `GLIBCXX_3.4.32' not found 
 ## (required by /usr/local/lib/libfstmpdtscript.so.26))
 # simply run `pip install wetext`
 # but you'll need to update the load logic in indextts/utils/front.py (load function).
