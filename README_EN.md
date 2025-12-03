@@ -6,7 +6,7 @@
 </div>
 
 ## Recent Updates
-- **[Fix]** Fixed vLLM version compatibility issues, now supporting the latest version.
+- **[Fix]** Fixed vLLM version compatibility issues, now supporting the latest version (v0.11.2).
 - **[Fix]** Optimized `WeTextProcessing` (tn) loading logic and added fault tolerance.
 - **[Feat]** Added `safe_torchaudio_load` to replace `torchaudio.load`, improving audio loading stability.
 - **[Feat]** Supported BigVGAN compilation on CUDA sm_110 architecture.

@@ -187,7 +187,11 @@ def _prepare_inputs(
     self.discard_request_indices.copy_to_gpu(self.num_discarded_requests)
 
     # Copy the tensors to the GPU.
-    self._prepare_input_ids(total_num_scheduled_tokens, cu_num_tokens)
+    self._prepare_input_ids(
+        scheduler_output,
+        total_num_scheduled_tokens,
+        cu_num_tokens,
+    )
 
     # GPT2TTSModel position IDs support. Offset the decode positions to ignore
     # prompt tokens so each decode step uses the correct embedding.
