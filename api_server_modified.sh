@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # 仅在未激活时再激活
-env="index"
+env="omni-index"
 if [[ -z "${CONDA_PREFIX:-}" || "$(basename "$CONDA_PREFIX")" != "$env" ]]; then
     source "$HOME/miniconda3/etc/profile.d/conda.sh"
     conda activate "$env"
